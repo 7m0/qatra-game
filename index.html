@@ -38,6 +38,7 @@ canvas{display:block}
 .case:hover{background:rgba(255,255,255,.2)}
 .case .ic{font-size:60px}.case b{display:block;font-size:24px}.case span{font-size:16px;opacity:.9}
 .hide{display:none!important}
+#edge{position:absolute;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:rgba(255,214,0,.85);border:3px solid #fff;display:none;align-items:center;justify-content:center;color:#5d4037;font-size:24px;box-shadow:0 0 10px rgba(0,0,0,.3)}
 #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .8s;z-index:5}
 .note{background:#fffde7;color:#0b4f9c;border-radius:18px;padding:14px;margin:14px auto;max-width:560px;font-weight:900;font-size:clamp(16px,2.4vw,20px)}
 .stars{font-size:46px;letter-spacing:6px}
@@ -170,19 +171,19 @@ g.font = `900 ${fs}px Cairo, sans-serif`; g.fillStyle = bg; const r = 36; g.begi
 g.lineWidth = 6; g.strokeStyle = '#fff'; g.stroke(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.direction = 'rtl'; g.fillText(text, w / 2, c.height / 2 + 4);
 const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
 const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.renderOrder = 10;
-const k = .0042 * scale; sp.scale.set(w * k, c.height * k, 1); return sp;
+const k = .0027 * scale; sp.scale.set(w * k, c.height * k, 1); sp.material.opacity = 0; allLabels.push(sp); return sp;
 }
-const labels = new THREE.Group(); scene.add(labels);
+const labels = new THREE.Group(); scene.add(labels); const allLabels = []; const _lp = new THREE.Vector3();
 let coldLbl, warmTopLbl;
 async function buildLabels() {
 try { await document.fonts.load('900 64px Cairo'); } catch (e) {}
-labels.clear();
-[[0, .9, 0], [3, .9, -2.5], [-3, .9, -2]].forEach(p => { const l = makeLabel('ماءٌ دافئ 🔥', '#e65100', .9); l.position.set(...p); labels.add(l); });
+labels.clear(); allLabels.length = 0;
+[[3, .5, -2.5], [-3, .5, 1]].forEach(p => { const l = makeLabel('ماءٌ دافئ 🔥', '#e65100', .9); l.position.set(...p); labels.add(l); });
 [[1.8, 4.5, -1], [-2.2, 5.5, 1.5]].forEach(p => { const l = makeLabel('بخارُ ماء ⬆️', '#0277bd', .8); l.position.set(...p); labels.add(l); });
-coldLbl = makeLabel('منطقةٌ باردة ❄️', '#01579b', 1.1); coldLbl.position.set(0, COLD_Y + .3, 0); labels.add(coldLbl);
-warmTopLbl = makeLabel('الهواءُ هنا ما زال دافئًا 🔥', '#bf360c', 1.0); warmTopLbl.position.set(0, COLD_Y + .3, 0); labels.add(warmTopLbl);
-dusts.forEach(d => { const l = makeLabel('دقيقةُ غبار', '#6d4c41', .55); l.position.set(0, .75, 0); d.userData.lbl = l; d.add(l); });
-orbs.forEach(o => { const l = makeLabel('حرارة', '#ff6d00', .5); l.position.set(0, .7, 0); o.add(l); });
+coldLbl = makeLabel('منطقةٌ باردة ❄️', '#01579b', 1.1); coldLbl.userData.far = 7; coldLbl.position.set(0, COLD_Y + .3, 0); labels.add(coldLbl);
+warmTopLbl = makeLabel('الهواءُ هنا ما زال دافئًا 🔥', '#bf360c', 1.0); warmTopLbl.userData.far = 7; warmTopLbl.position.set(0, COLD_Y + .3, 0); labels.add(warmTopLbl);
+dusts.forEach(d => { const l = makeLabel('دقيقةُ غبار', '#6d4c41', .7); l.position.set(0, .7, 0); d.userData.lbl = l; d.add(l); });
+orbs.forEach(o => { const l = makeLabel('حرارة', '#ff6d00', .6); l.position.set(0, .55, 0); o.add(l); });
 coldLbl.visible = G.caseIce; warmTopLbl.visible = !G.caseIce;
 }
 // cold boundary ring
@@ -229,7 +230,7 @@ const arrow = new THREE.Group(); const arrowMat = new THREE.MeshBasicMaterial({ 
 const aBody = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .22, 12), arrowMat); aBody.rotation.x = Math.PI / 2; aBody.position.z = .11; arrow.add(aBody);
 const aHead = new THREE.Mesh(new THREE.ConeGeometry(.07, .14, 16), arrowMat); aHead.rotation.x = -Math.PI / 2; aHead.position.z = -.03; arrow.add(aHead);
 arrow.traverse(m => { if (m.material) { m.material.depthTest = false; m.renderOrder = 20; } });
-scene.add(arrow);
+scene.add(arrow); arrow.visible = false;
 const ringTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.strokeStyle = '#ffeb3b'; g.lineWidth = 10; g.beginPath(); g.arc(64, 64, 54, 0, 6.3); g.stroke(); return new THREE.CanvasTexture(c); })();
 const targetRing = new THREE.Sprite(new THREE.SpriteMaterial({ map: ringTex, depthTest: false, transparent: true, fog: false })); targetRing.renderOrder = 15; scene.add(targetRing);
 const tmpV = new THREE.Vector3(), upV = new THREE.Vector3(0, 1, 0);
@@ -241,7 +242,26 @@ let b = null, bd = 1e9; dusts.forEach(d => { if (!d.visible) return; const dd = 
 }
 return null;
 }
+function fadeLabels() {
+for (const l of allLabels) { if (!l.visible || !l.parent || (l.parent.visible === false)) continue; l.getWorldPosition(_lp); const d = _lp.distanceTo(camera.position); const far = l.userData.far || 4; l.material.opacity = clamp((far - d) / 1.5, 0, .95) * clamp((d - 1.2) / 1, 0, 1); }
+}
+const edge = document.createElement('div'); edge.id = 'edge'; edge.innerHTML = '<span>➤</span>'; document.getElementById('hud').appendChild(edge);
+const _np = new THREE.Vector3();
 function updateGuide(t) {
+fadeLabels();
+const tg = currentTarget(); arrow.visible = false; targetRing.visible = !!tg && !vr;
+if (!tg || vr) { edge.style.display = 'none'; return; }
+targetRing.position.copy(tg); const dd = tg.distanceTo(camera.position); targetRing.material.opacity = .75; targetRing.scale.setScalar(clamp(dd * .07, .5, 1.4) * (1 + .12 * Math.sin(t * 4)));
+_np.copy(tg).project(camera); const behind = _np.z > 1;
+let x = _np.x, y = _np.y; if (behind) { x = -x; y = -y; }
+if (!behind && Math.abs(x) < .8 && Math.abs(y) < .75) { edge.style.display = 'none'; return; }
+const ang = Math.atan2(y, x); const rx = innerWidth * .42, ry = innerHeight * .38;
+const k = 1 / Math.max(Math.abs(Math.cos(ang)) / 1, Math.abs(Math.sin(ang)) / (ry / rx));
+const px = innerWidth / 2 + Math.cos(ang) * Math.min(rx, k * rx), py = innerHeight / 2 - Math.sin(ang) * Math.min(ry, k * rx);
+edge.style.display = 'flex'; edge.style.left = px + 'px'; edge.style.top = py + 'px'; edge.firstChild.style.transform = `rotate(${-ang}rad)`;
+edge.style.opacity = .65 + .35 * Math.sin(t * 5);
+}
+function _oldGuide(t) {
 const tg = currentTarget(); arrow.visible = targetRing.visible = !!tg && !vr; if (!tg) return;
 const fw = lookDir().clone(); const right = new THREE.Vector3().crossVectors(fw, camera.up).normalize(); const up = new THREE.Vector3().crossVectors(right, fw).normalize();
 arrow.position.copy(camera.position).addScaledVector(fw, .8).addScaledVector(up, -.17);
