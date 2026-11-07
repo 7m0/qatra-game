@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>صِر قطرة 💧 | رحلة قطرة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#06233f;font-family:Cairo,system-ui,sans-serif;color:#fff;touch-action:none}
+canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none}
+#mission{position:absolute;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:rgba(6,35,63,.78);border:2px solid #5ec8ff;border-radius:18px;padding:8px 18px;font-weight:900;font-size:clamp(15px,2.4vw,22px);text-align:center;max-width:92vw;backdrop-filter:blur(4px)}
+#mission small{display:block;font-weight:700;opacity:.85;font-size:.75em}
+#thermo{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:34px;height:46vh;border-radius:20px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.6);overflow:hidden}
+#thermoFill{position:absolute;bottom:0;left:0;right:0;height:60%;background:linear-gradient(#ffb74d,#e53935);transition:height .3s,background .3s}
+#thermoLbl{position:absolute;right:6px;top:calc(50% + 23vh + 8px);font-weight:900;font-size:13px;width:48px;text-align:center}
+#state{position:absolute;left:14px;top:max(12px,env(safe-area-inset-top));background:rgba(6,35,63,.7);border-radius:14px;padding:6px 12px;font-weight:900;font-size:15px}
+#qatra{position:absolute;left:12px;bottom:110px;display:flex;align-items:flex-end;gap:8px;max-width:min(560px,80vw);transition:opacity .4s}
+#qatra .face{width:64px;height:78px;flex:none}
+#qatra .bubble{background:#fffde7;color:#0b4f9c;border:3px solid #0b4f9c;border-radius:18px 18px 18px 4px;padding:10px 14px;font-weight:900;font-size:clamp(14px,2.2vw,19px);line-height:1.5}
+#fly{position:absolute;bottom:max(20px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);pointer-events:auto;width:150px;height:72px;border-radius:40px;border:4px solid #fff;background:linear-gradient(#4fc3f7,#0277bd);color:#fff;font:900 24px Cairo;box-shadow:0 6px 0 #01579b;display:none}
+#fly:active,#fly.on{transform:translateX(-50%) translateY(4px);box-shadow:0 2px 0 #01579b}
+#tools{position:absolute;left:12px;bottom:max(24px,env(safe-area-inset-bottom));display:flex;gap:8px;pointer-events:auto}
+#tools button{width:52px;height:52px;border-radius:50%;border:2px solid #fff;background:rgba(6,35,63,.7);color:#fff;font-size:22px}
+#cross{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid rgba(255,255,255,.85);border-radius:50%;box-shadow:0 0 8px rgba(0,0,0,.4)}
+#vign{position:absolute;inset:0;box-shadow:inset 0 0 120px 40px rgba(94,200,255,.35);border-radius:0;transition:box-shadow .6s}
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,#1f8ee0,#06233f 70%);z-index:10;padding:20px;overflow:auto}
+.card{max-width:720px;width:100%;text-align:center}
+.card h1{font-size:clamp(40px,8vw,72px);margin:0;font-weight:900;text-shadow:0 4px 0 #01579b}
+.card p{font-size:clamp(16px,2.6vw,22px);font-weight:700;line-height:1.7;margin:10px 0}
+.btn{font:900 clamp(18px,3vw,24px) Cairo;border:none;border-radius:22px;padding:14px 26px;margin:8px;color:#fff;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.3)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.g{background:#2e7d32}.o{background:#ef6c00}.b{background:#1565c0}.p{background:#6a1b9a}.s{background:#546e7a}
+.cases{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.case{background:rgba(255,255,255,.12);border:3px solid rgba(255,255,255,.5);border-radius:24px;padding:18px;width:min(300px,90vw);cursor:pointer}
+.case:hover{background:rgba(255,255,255,.2)}
+.case .ic{font-size:60px}.case b{display:block;font-size:24px}.case span{font-size:16px;opacity:.9}
+.hide{display:none!important}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .8s;z-index:5}
+.note{background:#fffde7;color:#0b4f9c;border-radius:18px;padding:14px;margin:14px auto;max-width:560px;font-weight:900;font-size:clamp(16px,2.4vw,20px)}
+.stars{font-size:46px;letter-spacing:6px}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.min.js"}}</script>
+</head>
+<body>
+<div id="hud" class="hide">
+<div id="vign"></div>
+<div id="cross"></div>
+<div id="mission"></div>
+<div id="state"></div>
+<div id="thermo"><div id="thermoFill"></div></div>
+<div id="thermoLbl">🌡️</div>
+<div id="qatra"><svg class="face" viewBox="-120 -200 240 330"><defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fd6ff"/><stop offset="1" stop-color="#1c8fe0"/></linearGradient></defs><path d="M0 -190 C 40 -120 110 -60 110 10 C110 75 60 115 0 115 C-60 115 -110 75 -110 10 C-110 -60 -40 -120 0 -190Z" fill="url(#dg)" stroke="#0b4f9c" stroke-width="8"/><ellipse cx="-38" cy="0" rx="22" ry="27" fill="#fff"/><ellipse cx="38" cy="0" rx="22" ry="27" fill="#fff"/><circle cx="-34" cy="6" r="11" fill="#1a1a2e"/><circle cx="42" cy="6" r="11" fill="#1a1a2e"/><path d="M-30 55 Q0 85 30 55" stroke="#1a1a2e" stroke-width="8" fill="none" stroke-linecap="round"/></svg><div class="bubble" id="say"></div></div>
+<button id="fly">طِر 💨</button>
+<div id="tools"><button id="bVR" title="نظارة VR">👓</button><button id="bSnd" title="الصوت">🔊</button><button id="bHome" title="البداية">🏠</button></div>
+</div>
+<div id="flash"></div>
+<div class="screen" id="sStart"><div class="card">
+<svg viewBox="-120 -200 240 330" style="width:110px"><path d="M0 -190 C 40 -120 110 -60 110 10 C110 75 60 115 0 115 C-60 115 -110 75 -110 10 C-110 -60 -40 -120 0 -190Z" fill="#38b6ff" stroke="#fff" stroke-width="8"/><ellipse cx="-38" cy="0" rx="22" ry="27" fill="#fff"/><ellipse cx="38" cy="0" rx="22" ry="27" fill="#fff"/><circle cx="-34" cy="6" r="11" fill="#1a1a2e"/><circle cx="42" cy="6" r="11" fill="#1a1a2e"/><path d="M-30 55 Q0 85 30 55" stroke="#1a1a2e" stroke-width="8" fill="none" stroke-linecap="round"/></svg>
+<h1>صِرْ قطرة 💧</h1>
+<p>انكمشْ حتى تصيرَ جُزيءَ ماءٍ صغيرًا داخل العُلبة،<br>واكتشفْ بنفسك: كيف تتكوّن الغيمة؟</p>
+<p style="font-size:16px;opacity:.85">📱 لُفَّ الجهازَ حولك لتنظرَ في كل الاتجاهات، واضغطْ مطوّلًا على زر <b>طِر</b> لتتحرّكَ نحو ما تنظر إليه.</p>
+<button class="btn g" id="bGo">انكمشْ وادخلْ العُلبة ▶</button>
+</div></div>
+<div class="screen hide" id="sCase"><div class="card">
+<h1 style="font-size:clamp(30px,6vw,52px)">اخترِ العُلبة 🫙</h1>
+<p>العُلبتان فيهما الماءُ الدافئُ نفسُه ودقائقُ الغبارِ نفسُها،<br>والفرقُ الوحيدُ هو الثلجُ فوق الغطاء.</p>
+<div class="cases">
+<div class="case" id="cA"><div class="ic">🌡️</div><b>الحالة (أ)</b><span>عُلبة بلا ثلج<br>(دون تبريدٍ كافٍ)</span></div>
+<div class="case" id="cB"><div class="ic">❄️</div><b>الحالة (ب)</b><span>عُلبة عليها ثلج<br>(مع تبريدٍ كافٍ)</span></div>
+</div>
+<p style="font-size:16px;opacity:.85">✍️ قبل أن تبدأ: اكتبْ توقّعك في ورقة الاستقصاء!</p>
+</div></div>
+<div class="screen hide" id="sEnd"><div class="card">
+<div class="stars" id="eStars"></div>
+<h1 id="eTitle" style="font-size:clamp(30px,6vw,52px)"></h1>
+<p id="eText"></p>
+<div class="note" id="eNote"></div>
+<div id="eBtns"></div>
+</div></div>
+<script type="module">
+import * as THREE from 'three';
+import { StereoEffect } from 'https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/effects/StereoEffect.js';
+// ================== basics ==================
+const $ = id => document.getElementById(id);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.body.prepend(renderer.domElement);
+const stereo = new StereoEffect(renderer); stereo.setEyeSeparation(0.06);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.02, 200);
+camera.rotation.order = 'YXZ';
+addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); stereo.setSize(innerWidth, innerHeight); });
+const R = 6, H = 14, WATER = 0, COLD_Y = 9.5;
+const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+// ================== world ==================
+scene.add(new THREE.HemisphereLight(0xdff3ff, 0x1e5a8a, 1.4));
+const sunL = new THREE.DirectionalLight(0xffffff, 1.2); sunL.position.set(5, 20, 8); scene.add(sunL);
+const warmL = new THREE.PointLight(0xff9a3c, 9, 12, 1.5); warmL.position.set(0, 1, 0); scene.add(warmL);
+const coldL = new THREE.PointLight(0x9fe0ff, 0, 14, 1.5); coldL.position.set(0, H - 1, 0); scene.add(coldL);
+scene.fog = new THREE.FogExp2(0x9fd3f5, 0.02);
+scene.background = new THREE.Color(0x9fd3f5);
+// glass jar (seen from inside)
+const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xcfefff, transparent: true, opacity: .22, roughness: .05, side: THREE.BackSide, depthWrite: false });
+const jar = new THREE.Mesh(new THREE.CylinderGeometry(R, R, H + 2, 64, 1, true), glassMat); jar.position.y = H / 2 - 1; scene.add(jar);
+// vertical highlight streaks on glass
+for (let i = 0; i < 8; i++) {
+const s = new THREE.Mesh(new THREE.PlaneGeometry(.18, H), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .18, depthWrite: false, side: THREE.DoubleSide }));
+const a = i / 8 * Math.PI * 2; s.position.set(Math.cos(a) * (R - .02), H / 2, Math.sin(a) * (R - .02)); s.lookAt(0, H / 2, 0); scene.add(s);
+}
+// outside world: a soft classroom-ish blur ring (big sphere gradient)
+const skyGeo = new THREE.SphereGeometry(60, 32, 16);
+const skyMat = new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, uniforms: { top: { value: new THREE.Color(0xe8f6ff) }, bot: { value: new THREE.Color(0x6aa8d8) } },
+vertexShader: 'varying vec3 p; void main(){ p=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+fragmentShader: 'uniform vec3 top; uniform vec3 bot; varying vec3 p; void main(){ float h=normalize(p).y*.5+.5; gl_FragColor=vec4(mix(bot,top,h),1.); }' });
+scene.add(new THREE.Mesh(skyGeo, skyMat));
+// warm water surface
+const waterGeo = (() => { const rings = 28, segs = 72, pos = [], idx = []; pos.push(0, 0, 0);
+for (let r = 1; r <= rings; r++) for (let s = 0; s < segs; s++) { const a = s / segs * Math.PI * 2, rr = (R - .02) * r / rings; pos.push(Math.cos(a) * rr, 0, Math.sin(a) * rr); }
+for (let s = 0; s < segs; s++) idx.push(0, 1 + (s + 1) % segs, 1 + s);
+for (let r = 1; r < rings; r++) for (let s = 0; s < segs; s++) { const a = 1 + (r - 1) * segs + s, b = 1 + (r - 1) * segs + (s + 1) % segs, c = 1 + r * segs + s, d = 1 + r * segs + (s + 1) % segs; idx.push(a, b, c, b, d, c); }
+const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g; })();
+const wBase = waterGeo.attributes.position.array.slice();
+const waterMat = new THREE.MeshStandardMaterial({ color: 0x1ea0e6, emissive: 0xff8a3d, emissiveIntensity: .07, roughness: .2, metalness: .1, transparent: true, opacity: .92 });
+const water = new THREE.Mesh(waterGeo, waterMat); scene.add(water);
+const deep = new THREE.Mesh(new THREE.CylinderGeometry(R - .02, R - .02, 3, 64), new THREE.MeshStandardMaterial({ color: 0x0d5aa7, emissive: 0xff5722, emissiveIntensity: .12 })); deep.position.y = -1.52; scene.add(deep);
+// lid + ice
+const lid = new THREE.Mesh(new THREE.CylinderGeometry(R + .3, R + .3, .4, 64), new THREE.MeshStandardMaterial({ color: 0xb0bec5, metalness: .6, roughness: .35 })); lid.position.y = H + .2; scene.add(lid);
+const frost = new THREE.Mesh(new THREE.CircleGeometry(R, 64), new THREE.MeshStandardMaterial({ color: 0xe8f8ff, emissive: 0x9fe0ff, emissiveIntensity: .6, transparent: true, opacity: .0, side: THREE.DoubleSide }));
+frost.rotation.x = Math.PI / 2; frost.position.y = H - .01; scene.add(frost);
+const iceGroup = new THREE.Group(); scene.add(iceGroup);
+const iceMat = new THREE.MeshPhysicalMaterial({ color: 0xdff6ff, transparent: true, opacity: .8, roughness: .1, transmission: .2 });
+for (let i = 0; i < 9; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1, 1.4), iceMat); c.position.set(rand(-3.5, 3.5), H + .9, rand(-3.5, 3.5)); c.rotation.y = rand(0, 3); iceGroup.add(c); }
+// cold zone haze
+const coldHaze = new THREE.Mesh(new THREE.CylinderGeometry(R - .05, R - .05, H - COLD_Y, 48, 1, true), new THREE.MeshBasicMaterial({ color: 0xbfeaff, transparent: true, opacity: 0, side: THREE.BackSide, depthWrite: false }));
+coldHaze.position.y = (H + COLD_Y) / 2; scene.add(coldHaze);
+// warm haze
+const warmHaze = new THREE.Mesh(new THREE.CylinderGeometry(R - .06, R - .06, H, 48, 1, true), new THREE.MeshBasicMaterial({ color: 0xffb36b, transparent: true, opacity: 0, side: THREE.BackSide, depthWrite: false }));
+warmHaze.position.y = H / 2; scene.add(warmHaze);
+// snow sparkles (cold case)
+const sparkN = 160, sparkGeo = new THREE.BufferGeometry(), sparkPos = new Float32Array(sparkN * 3);
+for (let i = 0; i < sparkN; i++) { const a = rand(0, 6.28), r = Math.sqrt(Math.random()) * (R - .5); sparkPos.set([Math.cos(a) * r, rand(COLD_Y, H), Math.sin(a) * r], i * 3); }
+sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+const sparks = new THREE.Points(sparkGeo, new THREE.PointsMaterial({ color: 0xffffff, size: .09, transparent: true, opacity: 0 })); scene.add(sparks);
+// dust nuclei
+const dustMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2b, roughness: 1, flatShading: true });
+const haloTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 4, 32, 32, 32); gr.addColorStop(0, 'rgba(255,214,140,.9)'); gr.addColorStop(1, 'rgba(255,214,140,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); })();
+const dusts = [];
+for (let i = 0; i < 12; i++) {
+let g = new THREE.IcosahedronGeometry(.32, 1); const p = g.attributes.position;
+const sd = rand(0, 10); for (let k = 0; k < p.count; k++) { const x = p.getX(k), y = p.getY(k), z = p.getZ(k); const s = 1 + .28 * Math.sin(x * 9 + sd) * Math.sin(y * 11 + sd * 2) + .18 * Math.sin(z * 13 + sd * 3); p.setXYZ(k, x * s, y * s, z * s); }
+g.computeVertexNormals();
+const m = new THREE.Mesh(g, dustMat); const a = i / 12 * 6.28 + rand(0, .4), r = rand(1.2, R - 1.3);
+m.position.set(Math.cos(a) * r, rand(6.2, 12.6), Math.sin(a) * r);
+const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, depthWrite: false, transparent: true, opacity: .8 })); halo.scale.set(1.6, 1.6, 1); m.add(halo);
+m.userData = { base: m.position.clone(), ph: rand(0, 6), shell: null, used: false };
+scene.add(m); dusts.push(m);
+}
+// ambient vapor molecules (instanced)
+const VN = 260;
+const vapGeo = new THREE.SphereGeometry(.07, 10, 8);
+const vapMat = new THREE.MeshStandardMaterial({ color: 0xbfe9ff, emissive: 0x3aa7e8, emissiveIntensity: .3, transparent: true, opacity: .85 });
+const vapor = new THREE.InstancedMesh(vapGeo, vapMat, VN); scene.add(vapor);
+const vp = []; for (let i = 0; i < VN; i++) vp.push({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, mode: 0, t: 0, tx: 0, ty: 0, tz: 0 });
+function respawnVapor(o, anywhere) { const a = rand(0, 6.28), r = Math.sqrt(Math.random()) * (R - .6); o.x = Math.cos(a) * r; o.z = Math.sin(a) * r; o.y = anywhere ? rand(.2, H - .5) : rand(.05, .4); o.vx = rand(-.3, .3); o.vz = rand(-.3, .3); o.vy = rand(.4, 1.1); o.mode = 0; }
+vp.forEach(o => respawnVapor(o, true));
+const dummy = new THREE.Object3D();
+// heat orbs (mission 1)
+const orbs = [];
+const orbMat = new THREE.MeshStandardMaterial({ color: 0xffb300, emissive: 0xff6d00, emissiveIntensity: 1.4 });
+for (let i = 0; i < 6; i++) {
+const o = new THREE.Mesh(new THREE.IcosahedronGeometry(.28, 2), orbMat);
+const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTex, color: 0xff8f00, depthWrite: false, transparent: true })); halo.scale.set(1.8, 1.8, 1); o.add(halo);
+o.userData = { taken: false, ph: rand(0, 6) }; scene.add(o); orbs.push(o);
+}
+// cloud puffs (success)
+const puffs = new THREE.Group(); scene.add(puffs);
+const puffMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, transparent: true, opacity: .95 });
+for (let i = 0; i < 70; i++) { const p = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(.5, 1.2), 2), puffMat); p.userData = { dir: new THREE.Vector3(rand(-1, 1), rand(-.5, .7), rand(-1, 1)).normalize(), dist: rand(1.6, 4.5), delay: rand(0, 2.5) }; p.scale.setScalar(.001); puffs.add(p); }
+// droplets joining the player
+const joiners = []; const joinMat = new THREE.MeshStandardMaterial({ color: 0x5ec8ff, transparent: true, opacity: .75, roughness: .05 });
+for (let i = 0; i < 24; i++) { const d = new THREE.Mesh(new THREE.SphereGeometry(.12, 14, 10), joinMat); d.visible = false; d.userData = { from: new THREE.Vector3(), ph: rand(0, 6) }; scene.add(d); joiners.push(d); }
+// player's own water shell (visible when condensed, around camera)
+const shell = new THREE.Mesh(new THREE.SphereGeometry(.6, 32, 20), new THREE.MeshStandardMaterial({ color: 0x7fd6ff, transparent: true, opacity: 0, side: THREE.BackSide, depthWrite: false }));
+scene.add(shell);
+// ================== audio ==================
+let AC = null, windGain, windFilt, master, soundOn = true;
+function initAudio() {
+if (AC) return; AC = new (window.AudioContext || window.webkitAudioContext)();
+master = AC.createGain(); master.gain.value = .8; master.connect(AC.destination);
+const buf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate); const d = buf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+const src = AC.createBufferSource(); src.buffer = buf; src.loop = true;
+windFilt = AC.createBiquadFilter(); windFilt.type = 'lowpass'; windFilt.frequency.value = 400;
+windGain = AC.createGain(); windGain.gain.value = 0; src.connect(windFilt).connect(windGain).connect(master); src.start();
+}
+function tone(f, dur, type = 'sine', vol = .25, slide = 0, when = 0) {
+if (!AC || !soundOn) return; const t = AC.currentTime + when; const o = AC.createOscillator(), g = AC.createGain();
+o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(f * slide, t + dur);
+g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g).connect(master); o.start(t); o.stop(t + dur + .05);
+}
+const sfx = {
+bubble: () => tone(rand(300, 700), .12, 'sine', .12, 2.2),
+orb: () => { tone(520, .15, 'triangle', .25); tone(780, .2, 'triangle', .2, 1, .08); },
+evap: () => { for (let i = 0; i < 6; i++) tone(400 + i * 120, .25, 'sine', .15, 1.5, i * .07); },
+boing: () => tone(220, .35, 'square', .12, .5),
+freeze: () => { tone(1800, .08, 'square', .06); tone(2400, .08, 'square', .05, 1, .05); },
+win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .5, 'triangle', .22, 1, i * .13)),
+fail: () => [392, 330, 262].forEach((f, i) => tone(f, .45, 'sine', .2, 1, i * .2)),
+};
+// ================== controls ==================
+let yaw = 0, pitch = 0, gyro = false, gyroQ = new THREE.Quaternion(), yawOffset = 0, gyroReady = false;
+const zee = new THREE.Vector3(0, 0, 1), q1 = new THREE.Quaternion(-Math.sqrt(.5), 0, 0, Math.sqrt(.5)), eul = new THREE.Euler(), q0 = new THREE.Quaternion();
+function onOrient(e) {
+if (e.alpha == null) return; gyro = true;
+const orient = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+eul.set(THREE.MathUtils.degToRad(e.beta), THREE.MathUtils.degToRad(e.alpha) + yawOffset, -THREE.MathUtils.degToRad(e.gamma), 'YXZ');
+gyroQ.setFromEuler(eul); gyroQ.multiply(q1); gyroQ.multiply(q0.setFromAxisAngle(zee, -THREE.MathUtils.degToRad(orient)));
+if (!gyroReady) { gyroReady = true; }
+}
+async function enableGyro() {
+try { if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) { const r = await DeviceOrientationEvent.requestPermission(); if (r !== 'granted') return; } } catch (e) { return; }
+addEventListener('deviceorientation', onOrient);
+}
+// drag to look (when no gyro)
+let drag = null;
+renderer.domElement.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; });
+addEventListener('pointerup', () => drag = null);
+addEventListener('pointermove', e => { if (!drag || gyro) return; yaw -= (e.clientX - drag.x) * .005; pitch = clamp(pitch - (e.clientY - drag.y) * .005, -1.45, 1.45); drag = { x: e.clientX, y: e.clientY }; });
+let flying = false;
+const fly = $('fly');
+const flyOn = e => { e.preventDefault(); flying = true; fly.classList.add('on'); initAudio(); };
+const flyOff = () => { flying = false; fly.classList.remove('on'); };
+fly.addEventListener('pointerdown', flyOn); fly.addEventListener('pointerup', flyOff); fly.addEventListener('pointerleave', flyOff); fly.addEventListener('pointercancel', flyOff);
+addEventListener('keydown', e => { if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') { flying = true; initAudio(); } if (e.code === 'ArrowLeft') yaw += .08; if (e.code === 'ArrowRight') yaw -= .08; });
+addEventListener('keyup', e => { if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') flying = false; });
+// in VR mode: tap anywhere = fly while held
+let vr = false;
+renderer.domElement.addEventListener('pointerdown', () => { if (vr) flying = true; });
+renderer.domElement.addEventListener('pointerup', () => { if (vr) flying = false; });
+// ================== game state ==================
+const G = { phase: 'menu', caseIce: true, temp: .75, heat: 0, bounces: 0, t: 0, phaseT: 0, coldT: 0, hintT: 0, attempts: { A: 0, B: 0 } };
+const player = new THREE.Vector3(0, .6, 3), vel = new THREE.Vector3();
+let sayTimer = 0;
+function say(txt, sec = 6) { $('say').innerHTML = txt; $('qatra').style.opacity = 1; sayTimer = sec; }
+function mission(main, sub = '') { $('mission').innerHTML = main + (sub ? `<small>${sub}</small>` : ''); }
+function setState(txt) { $('state').textContent = txt; }
+function show(id) { ['sStart', 'sCase', 'sEnd'].forEach(s => $(s).classList.toggle('hide', s !== id)); $('hud').classList.toggle('hide', !!id); }
+function setupCase(ice) {
+G.caseIce = ice; G.phase = 'liquid'; G.temp = .55; G.heat = 0; G.bounces = 0; G.phaseT = 0; G.coldT = 0; G.hintT = 0;
+G.attempts[ice ? 'B' : 'A']++;
+player.set(0, .55, 3.2); vel.set(0, 0, 0); yaw = 0; pitch = -.2;
+if (gyro) { /* re-center later via button */ }
+iceGroup.visible = ice; frost.material.opacity = ice ? .55 : 0; sparks.material.opacity = ice ? .9 : 0;
+coldHaze.material.opacity = ice ? .18 : 0; warmHaze.material.opacity = ice ? 0 : .12; coldL.intensity = ice ? 40 : 0;
+scene.fog.color.set(ice ? 0x9fd3f5 : 0xf3c79a); scene.background.set(ice ? 0x9fd3f5 : 0xf3c79a);
+dusts.forEach(d => { d.visible = true; d.userData.used = false; d.position.copy(d.userData.base); d.scale.setScalar(1); });
+orbs.forEach((o, i) => { const a = i / orbs.length * 6.28; o.position.set(Math.cos(a) * 2.6, .7, Math.sin(a) * 2.6 + .5); o.visible = true; o.userData.taken = false; });
+puffs.children.forEach(p => p.scale.setScalar(.001)); joiners.forEach(j => j.visible = false); shell.material.opacity = 0;
+$('vign').style.boxShadow = 'inset 0 0 120px 40px rgba(94,200,255,.35)';
+mission('المهمة ١: امتصَّ الحرارة 🔥', 'طِرْ نحو الكُرات البرتقالية المتوهّجة فوق الماء الدافئ (اجمعْ ٣)');
+setState(ice ? '❄️ الحالة (ب): عُلبة مع ثلج' : '🌡️ الحالة (أ): عُلبة بلا ثلج');
+say('أنا الآن جُزيءُ ماءٍ سائلٍ في الماء الدافئ! 💧 أحتاج طاقةً حراريةً لأتحرّر... ساعدني!', 7);
+fly.style.display = 'block'; show(null);
+}
+function endScreen(win) {
+G.phase = 'end'; flying = false; fly.style.display = 'none';
+const other = G.caseIce ? 'A' : 'B';
+$('eStars').textContent = win ? '⭐⭐⭐' : '🤔';
+$('eTitle').textContent = win ? 'صِرْنا غيمةً! ☁️' : 'لم تتكوّن غيمة!';
+$('eText').innerHTML = win
+? 'تبخّرتَ بالحرارة، ثم صعدتَ إلى الأعلى وبرَدْتَ، فتكثّفتَ حول دقيقة الغبار وصرتَ قطرةً صغيرة،<br>وتجمّعتْ معك ملايين القطرات... فتكوّنت الغيمة!'
+: 'تبخّرتَ وصعدتَ، لكنك بقيتَ دافئًا وسريعًا، فارتددتَ عن دقائق الغبار ولم تتكثّف...<br>بقيتَ بخارًا لا نراه، ولم تتكوّن غيمة.';
+$('eNote').innerHTML = '✍️ سجّلْ في ورقة الاستقصاء: ' + (win ? 'ما الذي ساعدك على التكثّف؟' : 'ما العامل الذي كان ينقصك؟');
+$('eBtns').innerHTML = `<button class="btn ${other === 'A' ? 'o' : 'b'}" id="eOther">جرّبِ الحالة (${other === 'A' ? 'أ' : 'ب'}) ${other === 'A' ? '🌡️' : '❄️'}</button><button class="btn s" id="eAgain">أعدِ المحاولة ↺</button>`;
+$('eOther').onclick = () => setupCase(other === 'B'); $('eAgain').onclick = () => setupCase(G.caseIce);
+win ? sfx.win() : sfx.fail();
+setTimeout(() => show('sEnd'), win ? 200 : 600);
+}
+// ================== UI wiring ==================
+$('bGo').onclick = async () => { initAudio(); await enableGyro(); show('sCase'); };
+$('cA').onclick = () => setupCase(false);
+$('cB').onclick = () => setupCase(true);
+$('bHome').onclick = () => { G.phase = 'menu'; fly.style.display = 'none'; show('sCase'); };
+$('bSnd').onclick = () => { soundOn = !soundOn; $('bSnd').textContent = soundOn ? '🔊' : '🔇'; if (master) master.gain.value = soundOn ? .8 : 0; };
+$('bVR').onclick = () => { vr = !vr; ['mission', 'state', 'thermo', 'thermoLbl', 'qatra'].forEach(i => $(i).style.visibility = vr ? 'hidden' : 'visible'); fly.style.opacity = vr ? .25 : 1; $('cross').style.display = vr ? 'none' : 'block'; if (vr && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); };
+// ================== loop ==================
+const clock = new THREE.Clock(); const fwd = new THREE.Vector3(); let bubbleT = 0;
+function lookDir() { camera.getWorldDirection(fwd); return fwd; }
+function update(dt) {
+G.t += dt; G.phaseT += dt; if (sayTimer > 0) { sayTimer -= dt; if (sayTimer <= 0) $('qatra').style.opacity = .0; }
+// camera orientation
+if (gyro && gyroReady) camera.quaternion.copy(gyroQ); else camera.rotation.set(pitch, yaw, 0);
+// water waves
+const wp = waterGeo.attributes.position;
+for (let i = 0; i < wp.count; i++) { const x = wBase[i * 3], z = wBase[i * 3 + 2]; wp.setY(i, Math.sin(x * 1.3 + G.t * 1.6) * .06 + Math.cos(z * 1.1 + G.t * 1.2) * .05); }
+wp.needsUpdate = true; if ((G.t * 10 | 0) % 3 === 0) waterGeo.computeVertexNormals();
+// dust bobbing
+dusts.forEach(d => { if (d.userData.used) return; d.rotation.x += dt * .3; d.rotation.y += dt * .2; const b = d.userData.base; d.position.y = b.y + Math.sin(G.t * .7 + d.userData.ph) * .25; d.position.x = b.x + Math.cos(G.t * .5 + d.userData.ph) * .2; });
+sparks.rotation.y += dt * .05;
+// ambient vapor
+const warm = !G.caseIce;
+for (let i = 0; i < VN; i++) {
+const o = vp[i];
+if (o.mode === 0) {
+o.x += o.vx * dt; o.y += o.vy * dt; o.z += o.vz * dt;
+o.vx += rand(-1, 1) * dt * (warm ? 1.4 : .8); o.vz += rand(-1, 1) * dt * (warm ? 1.4 : .8);
+const r = Math.hypot(o.x, o.z); if (r > R - .3) { o.vx *= -1; o.vz *= -1; o.x *= (R - .35) / r; o.z *= (R - .35) / r; }
+if (G.caseIce && o.y > COLD_Y - .5 && Math.random() < dt * .6) { // condense on nearest dust
+let best = null, bd = 1e9; for (const d of dusts) { const dd = (d.position.x - o.x) ** 2 + (d.position.y - o.y) ** 2 + (d.position.z - o.z) ** 2; if (dd < bd) { bd = dd; best = d; } }
+if (best && bd < 9) { o.mode = 1; o.t = 0; const a = rand(0, 6.28), b = rand(-1, 1); o.tx = best.position.x + Math.cos(a) * .42 * Math.sqrt(1 - b * b); o.ty = best.position.y + b * .42; o.tz = best.position.z + Math.sin(a) * .42 * Math.sqrt(1 - b * b); o.dust = best; }
+}
+if (o.y > H - .3) { if (warm) { o.vy = -Math.abs(o.vy) * .6; o.y = H - .35; } else respawnVapor(o, false); }
+if (o.y < .05) respawnVapor(o, false);
+} else { // sticking to dust
+o.t += dt; o.x = lerp(o.x, o.tx + (o.dust.position.x - o.dust.userData.base.x), .08); o.y = lerp(o.y, o.ty + (o.dust.position.y - o.dust.userData.base.y) * .0, .08); o.z = lerp(o.z, o.tz, .08);
+if (o.t > 6) respawnVapor(o, false);
+}
+dummy.position.set(o.x, o.y, o.z); dummy.scale.setScalar(o.mode ? .8 : 1); dummy.updateMatrix(); vapor.setMatrixAt(i, dummy.matrix);
+}
+vapor.instanceMatrix.needsUpdate = true;
+// bubbles sound near water
+bubbleT -= dt; if (bubbleT < 0 && G.phase !== 'menu' && player.y < 3) { sfx.bubble(); bubbleT = rand(.2, .8); }
+if (G.phase === 'menu' || G.phase === 'end') { camera.position.set(Math.cos(G.t * .1) * 3, 5 + Math.sin(G.t * .2), Math.sin(G.t * .1) * 3); if (!gyro) camera.lookAt(0, 6, 0); return; }
+// movement
+const speed = G.phase === 'liquid' ? 2.2 : 3.2;
+if (flying && G.phase !== 'win') { const d = lookDir(); vel.addScaledVector(d, speed * dt * 4); }
+if (G.phase === 'vapor') vel.y += (G.caseIce ? .25 : .35) * dt; // warm vapor tends to rise
+if (G.phase === 'vapor' && !G.caseIce) { vel.x += rand(-1, 1) * dt * 1.5; vel.z += rand(-1, 1) * dt * 1.5; } // jittery when warm
+vel.multiplyScalar(Math.pow(.25, dt));
+player.addScaledVector(vel, dt);
+// bounds
+const maxY = G.phase === 'liquid' ? 1.2 : H - .6; const minY = G.phase === 'liquid' ? .35 : .5;
+player.y = clamp(player.y, minY, maxY);
+const pr = Math.hypot(player.x, player.z); if (pr > R - .7) { player.x *= (R - .7) / pr; player.z *= (R - .7) / pr; vel.x *= -.3; vel.z *= -.3; }
+camera.position.copy(player).add(new THREE.Vector3(Math.sin(G.t * 1.7) * .02, Math.sin(G.t * 2.3) * .03, 0));
+shell.position.copy(camera.position);
+// temperature model
+const h = clamp((player.y - 1) / (H - 2), 0, 1);
+let target;
+if (G.phase === 'liquid') target = .45 + G.heat * .15;
+else target = G.caseIce ? lerp(.85, .08, Math.pow(h, 1.3)) : lerp(.88, .7, h);
+G.temp = lerp(G.temp, target, 1 - Math.pow(.4, dt));
+$('thermoFill').style.height = (G.temp * 100).toFixed(0) + '%';
+$('thermoFill').style.background = G.temp < .3 ? 'linear-gradient(#b3e5fc,#0288d1)' : G.temp < .55 ? 'linear-gradient(#ffe082,#29b6f6)' : 'linear-gradient(#ffb74d,#e53935)';
+if (windGain) { windGain.gain.value = soundOn ? (G.phase === 'vapor' ? .05 + h * .12 : .015) : 0; windFilt.frequency.value = 300 + h * 900; }
+// ---- phase logic ----
+if (G.phase === 'liquid') {
+orbs.forEach(o => { if (!o.visible) return; o.position.y = .7 + Math.sin(G.t * 2 + o.userData.ph) * .15; o.rotation.y += dt; if (o.position.distanceTo(player) < .9) { o.visible = false; G.heat++; sfx.orb(); mission('المهمة ١: امتصَّ الحرارة 🔥', `جمعتَ ${G.heat} من ٣`); if (G.heat < 3) say(['رائع! أشعرُ بالدفء... 🔥', 'أكثر! جُزيئاتي تتحرّك أسرع! ⚡'][G.heat - 1], 4); } });
+if (G.phaseT > 20 && G.heat === 0 && G.hintT <= 0) { say('انظرْ حولك إلى الكُرات البرتقالية المتوهّجة، ثم اضغطْ مطوّلًا على <b>طِر</b> 💨', 6); G.hintT = 12; }
+G.hintT -= dt;
+if (G.heat >= 3) {
+G.phase = 'vapor'; G.phaseT = 0; sfx.evap(); flash(.6); vel.y += 2.5;
+$('vign').style.boxShadow = 'inset 0 0 160px 60px rgba(255,255,255,.35)';
+mission('المهمة ٢: اصعدْ إلى الأعلى ⬆️', 'صرتَ بخارَ ماءٍ خفيفًا! انظرْ للأعلى وطِرْ');
+say('تبخّرتُ! 💨 صرتُ بخارَ ماءٍ خفيفًا لا تراه العين... هيّا نصعد للأعلى!', 6);
+}
+} else if (G.phase === 'vapor') {
+G.hintT -= dt;
+if (player.y > COLD_Y - 1 && G.caseIce) {
+G.coldT += dt;
+if (G.coldT > .1 && G.coldT < .2) { sfx.freeze(); mission('المهمة ٣: تمسّكْ بدقيقة غبار 🟤', 'أنت باردٌ الآن! طِرْ نحو دقيقة غبار بنّية'); say('برررر! 🥶 بردتُ وصرتُ أبطأ... أحتاج شيئًا أتمسّك به!', 6); }
+if (G.coldT > 18 && G.hintT <= 0) { say('ابحثْ عن الدقائق البنّية المتوهّجة 🟤 وطِرْ نحوها!', 5); G.hintT = 10; }
+} else if (player.y > COLD_Y - 1 && !G.caseIce && G.hintT <= 0 && G.bounces === 0) {
+mission('المهمة ٣: تمسّكْ بدقيقة غبار 🟤', 'طِرْ نحو دقيقة غبار بنّية'); say('وصلتُ للأعلى... لكنّي ما زلتُ دافئًا وسريعًا جدًا! 🔥', 5); G.hintT = 8;
+}
+// dust contact
+for (const d of dusts) {
+if (d.position.distanceTo(player) < 1.0) {
+if (G.caseIce && G.temp < .32) { condense(d); break; }
+// bounce
+const away = player.clone().sub(d.position).normalize(); vel.addScaledVector(away, 5); sfx.boing(); G.bounces++;
+say(G.caseIce ? 'ارتددتُ! ما زلتُ دافئًا... أحتاج أن أصعد أعلى لأبرد ⬆️❄️' : 'ارتددتُ! 😵 أنا دافئٌ وسريعٌ جدًا، لا أستطيع التمسّك!', 4);
+break;
+}
+}
+if (!G.caseIce && (G.bounces >= 3 || G.phaseT > 75)) endScreen(false);
+} else if (G.phase === 'win') {
+G.winT += dt;
+joiners.forEach((j, i) => { const k = clamp((G.winT - i * .08) / 1.6, 0, 1); j.visible = k > 0; j.position.lerpVectors(j.userData.from, camera.position.clone().add(new THREE.Vector3(Math.cos(i) * .7, Math.sin(i * 1.7) * .5, Math.sin(i) * .7)), k); });
+shell.material.opacity = clamp(G.winT / 2, 0, .35);
+puffs.children.forEach(p => { const k = clamp((G.winT - 2 - p.userData.delay) / 2, 0, 1); p.position.copy(camera.position).addScaledVector(p.userData.dir, p.userData.dist); p.scale.setScalar(Math.max(.001, k)); });
+scene.fog.density = lerp(.02, .09, clamp((G.winT - 2.5) / 3, 0, 1)); scene.fog.color.set(0xffffff);
+}
+}
+function condense(d) {
+G.phase = 'win'; G.winT = 0; d.userData.used = true; d.visible = false; vel.set(0, 0, 0); flying = false; sfx.freeze(); flash(.4);
+joiners.forEach(j => j.userData.from.copy(camera.position).add(new THREE.Vector3(rand(-6, 6), rand(-3, 3), rand(-6, 6))));
+mission('تكثّفتَ! 💧➡️☁️', 'صرتَ قطرةً صغيرة حول دقيقة الغبار');
+say('تمسّكتُ بدقيقة الغبار وتكثّفتُ... صرتُ قطرةً! 💧 وانظرْ... القطرات تتجمّع حولي!', 7);
+setTimeout(() => endScreen(true), 5500);
+}
+function flash(o) { const f = $('flash'); f.style.transition = 'none'; f.style.opacity = o; requestAnimationFrame(() => { f.style.transition = 'opacity .8s'; f.style.opacity = 0; }); }
+function loop() {
+const dt = Math.min(clock.getDelta(), .05);
+update(dt);
+vr ? stereo.render(scene, camera) : renderer.render(scene, camera);
+requestAnimationFrame(loop);
+}
+loop();
+// test hooks
+window.__g = { G, player, dusts, scene, setupCase, show, endScreen, camera, set yawPitch([y, p]) { yaw = y; pitch = p; }, step: (n, dt = 1 / 30) => { for (let i = 0; i < n; i++) update(dt); renderer.render(scene, camera); } };
+</script>
+</body>
+</html>
